@@ -152,14 +152,19 @@ function Module:getParameters()
    local function flatten(parameters)
       local storages = {}
       local nParameters = 0
+      local type = (parameters[1] or torch.Tensor()):type()
       for k = 1,#parameters do
+         if parameters[k]:type() ~= type then
+            error("<getParameters()> ERROR: all parameters must be the " ..
+                  "same type to flatten")
+         end
          if not storageInSet(storages, parameters[k]:storage()) then
             storages[parameters[k]:storage()] = nParameters
             nParameters = nParameters + parameters[k]:storage():size()
          end
       end
       
-      local flatParameters = torch.Tensor(nParameters):fill(1)
+      local flatParameters = torch.Tensor():type(type):resize(nParameters):fill(1)
       local flatStorage = flatParameters:storage()
 
       for k = 1,#parameters do
@@ -178,7 +183,7 @@ function Module:getParameters()
       end
 
       for k, v in pairs(storages) do
-         flatParameters[{{v+1,v+k:size()}}]:copy(torch.Tensor():set(k))
+         flatParameters[{{v+1,v+k:size()}}]:copy(torch.Tensor():type(type):set(k))
       end
       return flatParameters
    end
